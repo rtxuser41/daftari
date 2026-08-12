@@ -44,7 +44,7 @@ export const useGroups = () => {
   }, [user, retryCount]);
 
   const addGroup = async (groupData: Omit<Group, 'id' | 'studentCount' | 'createdAt' | 'userId' | 'updatedAt'>) => {
-    if (!user) throw new Error("User not authenticated");
+    if (!user) throw new Error("لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً.");
     
     const validation = GroupValidator.validate({ name: groupData.name, price: groupData.price });
     if (!validation.valid) {
@@ -52,7 +52,7 @@ export const useGroups = () => {
     }
 
     if (groups.some(g => g.name.trim().toLowerCase() === groupData.name.trim().toLowerCase())) {
-      throw new Error("A group with this name already exists");
+      throw new Error("توجد مجموعة بنفس الاسم مسبقاً. يرجى اختيار اسم آخر.");
     }
     
     try {
@@ -74,7 +74,7 @@ export const useGroups = () => {
 
     if (groupData.name) {
       if (groups.some(g => g.id !== groupId && g.name.trim().toLowerCase() === groupData.name!.trim().toLowerCase())) {
-        throw new Error("Another group with this name already exists");
+        throw new Error("توجد مجموعة أخرى بنفس الاسم مسبقاً. يرجى اختيار اسم آخر.");
       }
     }
     try {

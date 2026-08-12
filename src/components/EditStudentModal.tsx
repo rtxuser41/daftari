@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Student } from "../types";
+import { validateOptionalAlgerianPhone, normalizeAlgerianPhone } from "../utils/phoneValidation";
 
 interface EditStudentModalProps {
   isOpen: boolean;
@@ -62,13 +63,24 @@ export function EditStudentModal({
       return;
     }
 
+    const phoneError = validateOptionalAlgerianPhone(phoneNumber);
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
+    const parentPhoneError = validateOptionalAlgerianPhone(parentPhone);
+    if (parentPhoneError) {
+      setError(parentPhoneError);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setError("");
       await onEdit(student.id!, {
         fullName,
-        phoneNumber: phoneNumber || undefined,
-        parentPhone: parentPhone || undefined,
+        phoneNumber: normalizeAlgerianPhone(phoneNumber) || undefined,
+        parentPhone: normalizeAlgerianPhone(parentPhone) || undefined,
         joiningDate: joiningDate
           ? new Date(joiningDate).toISOString()
           : undefined,

@@ -15,7 +15,7 @@ export default function Pricing() {
   const [activationCode, setActivationCode] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [activationError, setActivationError] = useState('');
-
+  const [activationSuccess, setActivationSuccess] = useState('');
   const handleUpgradeClick = () => {
     if (!user) {
       navigate('/login', { state: { from: { pathname: '/pricing' } } });
@@ -23,7 +23,6 @@ export default function Pricing() {
     }
     setIsActivationOpen(true);
   };
-
   const handleActivate = async () => {
     if (!activationCode.trim() || !user) return;
     setIsActivating(true);
@@ -32,9 +31,14 @@ export default function Pricing() {
       const result = await dbService.activation.activateProCode(user.uid, activationCode.trim());
       if (result.success) {
         await refreshProStatus();
-        alert(result.message);
-        setIsActivationOpen(false);
-        navigate('/dashboard');
+        setActivationSuccess(result.message);
+        setActivationError('');
+        setActivationCode('');
+        setTimeout(() => {
+          setIsActivationOpen(false);
+          setActivationSuccess('');
+          navigate('/dashboard');
+        }, 2500);
       } else {
         setActivationError(result.message);
       }
@@ -169,12 +173,48 @@ export default function Pricing() {
           </motion.div>
         </div>
 
-        <div className="mt-20 text-center flex flex-col items-center justify-center gap-4">
-          <ShieldCheck size={48} className="text-[#C5A059]" />
-          <h4 className="text-2xl font-bold">دفع آمن وموثوق</h4>
-          <p className="text-gray-500 max-w-lg">
-            نحن نستخدم أحدث تقنيات التشفير لضمان أمان بياناتك ومدفوعاتك. يمكنك الإلغاء في أي وقت.
-          </p>
+        {/* Instructions de paiement: BaridiMob / CCP (placeholders à compléter par l'administrateur) */}
+        <div className="mt-20 max-w-3xl mx-auto">
+          <div className="text-center mb-8 flex flex-col items-center gap-4">
+            <ShieldCheck size={48} className="text-[#C5A059]" />
+            <h4 className="text-2xl font-bold">دفع آمن وموثوق</h4>
+            <p className="text-gray-500 max-w-lg">
+              نحن نستخدم أحدث تقنيات التشفير لضمان أمان بياناتك ومدفوعاتك. يمكنك الإلغاء في أي وقت.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-[2rem] border border-gray-200 shadow-lg p-8">
+            <h4 className="text-xl font-bold text-[#0B2545] mb-2 text-center">كيف تحصل على كود التفعيل؟</h4>
+            <p className="text-gray-500 text-center text-sm mb-6">
+              الدفع عبر بريدي موب (BaridiMob) أو الحساب البريدي الجاري (CCP). أرسل وصل الدفع عبر واتساب وسنرسل لك كود التفعيل خلال ساعات قليلة.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                <p className="font-bold text-[#0B2545] mb-3">1. ادفع المبلغ عبر بريدي موب</p>
+                <ul className="text-sm text-gray-600 space-y-2">
+                  <li>• رقم الحساب: <span className="font-mono font-bold text-[#0B2545]">[CCP_PLACEHOLDER_12345678]</span></li>
+                  <li>• المفتاح: <span className="font-mono font-bold text-[#0B2545]">[CLE_PLACEHOLDER]</span></li>
+                  <li>• الاسم: <span className="font-bold">[OWNER_NAME_PLACEHOLDER]</span></li>
+                </ul>
+                <p className="text-xs text-gray-400 mt-4">(هذه بيانات مؤقتة — يحدّثها المسؤول قبل الإطلاق)</p>
+              </div>
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                <p className="font-bold text-[#0B2545] mb-3">2. أرسل وصل الدفع عبر واتساب</p>
+                <ul className="text-sm text-gray-600 space-y-2">
+                  <li>• رقم الواتساب: <span className="font-mono font-bold text-[#0B2545]" dir="ltr">[+213 XX XX XX XX]</span></li>
+                  <li>• ذكر اسمك ورقم هاتفك في الرسالة</li>
+                  <li>• ستصلك رسالة فيها كود التفعيل</li>
+                </ul>
+                <p className="text-xs text-gray-400 mt-4">(هذه بيانات مؤقتة — يحدّثها المسؤول قبل الإطلاق)</p>
+              </div>
+            </div>
+            <div className="mt-6 bg-[#C5A059]/10 rounded-xl p-4 flex items-start gap-3">
+              <Key className="w-5 h-5 text-[#C5A059] shrink-0 mt-0.5" />
+              <p className="text-sm text-[#0B2545]/80">
+                بعد استلام كود التفعيل، اضغط «ادخال كود التفعيل» في بطاقة Daftari Pro أعلاه، ثم الصق الكود لتفعيل حسابك فوراً.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -218,6 +258,9 @@ export default function Pricing() {
                   />
                   {activationError && (
                     <p className="text-red-500 text-sm mt-2">{activationError}</p>
+                  )}
+                  {activationSuccess && (
+                    <p className="text-green-600 text-sm font-bold mt-2">{activationSuccess}</p>
                   )}
                 </div>
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { validateOptionalAlgerianPhone, normalizeAlgerianPhone } from "../utils/phoneValidation";
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -40,13 +41,24 @@ export function AddStudentModal({
       return;
     }
 
+    const phoneError = validateOptionalAlgerianPhone(phoneNumber);
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
+    const parentPhoneError = validateOptionalAlgerianPhone(parentPhone);
+    if (parentPhoneError) {
+      setError(parentPhoneError);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setError("");
       await onAdd({
         fullName,
-        phoneNumber: phoneNumber || undefined,
-        parentPhone: parentPhone || undefined,
+        phoneNumber: normalizeAlgerianPhone(phoneNumber) || undefined,
+        parentPhone: normalizeAlgerianPhone(parentPhone) || undefined,
         joiningDate: joiningDate
           ? new Date(joiningDate).toISOString()
           : undefined,

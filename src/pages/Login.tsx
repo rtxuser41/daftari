@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
 import { User, Phone, BookOpen, UserCircle2 } from 'lucide-react';
+import { validateAlgerianPhone, normalizeAlgerianPhone } from '../utils/phoneValidation';
 
 export default function Login() {
   const { registerUser } = useAuth();
@@ -24,7 +25,18 @@ export default function Login() {
     setIsLoading(true);
     setError('');
     try {
-      await registerUser(formData);
+      // التحقق من صيغة رقم الهاتف الجزائري قبل إرسال البيانات إلى Supabase.
+      // يتم ذلك هنا (في الواجهة) لتحسين تجربة المستخدم، بينما تُفرض القيود
+      // الحقيقية في قاعدة البيانات (RLS) بغض النظر عن الواجهة.
+      const phoneError = validateAlgerianPhone(formData.phoneNumber);
+      if (phoneError) {
+        setError(phoneError);
+        setIsLoading(false);
+        return;
+      }
+      // تخزين الرقم بصيغة موحّدة تبدأ بـ 0
+      const normalized = normalizeAlgerianPhone(formData.phoneNumber);
+      await registerUser({ ...formData, phoneNumber: normalized! });
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء إنشاء الحساب. تأكد من إدخال بيانات صحيحة.');

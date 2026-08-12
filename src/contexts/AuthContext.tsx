@@ -26,15 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Try local mock user first for instant load in preview environments only
-    // (لا صلة له بحالة الاشتراك الحقيقية - يُستخدم فقط عند تعذر الاتصال بـ Supabase)
-    const mockUserStr = localStorage.getItem('mock_user');
-    if (mockUserStr) {
-      const mockUser = JSON.parse(mockUserStr);
-      setUser(mockUser);
-      setLoading(false);
-    }
-
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         const currentUser = { 
@@ -54,11 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsPro(teacher?.isPro === true);
         setLoading(false);
       } else {
-         if (!localStorage.getItem('mock_user')) {
-           setUser(null);
-           setIsPro(false);
-           setLoading(false);
-         }
+         setUser(null);
+         setIsPro(false);
+         setLoading(false);
       }
     });
 
@@ -78,6 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // This allows us to use standard Row Level Security securely without burdening the user.
     const cleanPhone = data.phoneNumber.replace(/[^0-9]/g, '');
     const dummyEmail = `${cleanPhone}@daftari.local`;
+    // ملاحظة أمنية حول كلمة المرور: هذا المستخدم لا يسجل الدخول أبداً عبر
+    // البريد الإلكتروني/كلمة المرور — تسجيل الدخول يتم حصرياً عبر رقم الهاتف
+    // (OTP). لذلك كلمة المرور ليست سراً يتحقق منه أي شخص، بل هي فقط متطلب تقني
+    // من Supabase Auth (الحد الأدنى: 6 أحرف).
+    // الجزء العشوائي يأتي من crypto.randomUUID() الذي يولد 122 بت من الانتروبيا
+    // (معيار RFC 4122)، فلا يمكن تخمينها ولا استغلالها. لاحقة '!Aa1' لا تنقص
+    // الانتروبيا الفعلية لأنها ثابتة ومعروفة.
     const dummyPassword = crypto.randomUUID() + '!Aa1';
     
     try {
@@ -96,13 +92,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (authRes.error) throw authRes.error;
     } catch (err) {
-      console.warn('Supabase Auth failed.', err);
-      // Mock local fallback for preview environment without Supabase connected
-      const uid = 'local-' + Date.now();
-      const mockUser = { id: uid, uid, email: dummyEmail, ...data } as any;
-      setUser(mockUser);
-      setIsGuest(false);
-      localStorage.setItem('mock_user', JSON.stringify(mockUser));
+      console.error('Supabase Auth failed.', err);
+      // No local fallback: authentication must always happen through Supabase.
+      // Allowing an unauthenticated local user would bypass every RLS check
+      // (which relies on a real auth.uid()) and the free-tier enforcement.
+      throw err;
     }
   };
 
@@ -112,7 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
-      localStorage.removeItem('mock_user');
       setUser(null);
       setIsGuest(false);
       setIsPro(false);

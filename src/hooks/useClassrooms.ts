@@ -36,7 +36,7 @@ export const useClassrooms = () => {
   }, [user]);
 
   const addClassroom = async (classroom: Omit<Classroom, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    if (!user) throw new Error("Not authenticated");
+    if (!user) throw new Error("لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً.");
     return dbService.classrooms.add({
       ...classroom,
       userId: user.uid
@@ -44,12 +44,12 @@ export const useClassrooms = () => {
   };
 
   const updateClassroom = async (id: string, updates: Partial<Classroom>) => {
-    if (!user) throw new Error("Not authenticated");
+    if (!user) throw new Error("لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً.");
     return dbService.classrooms.edit(user.uid, id, updates);
   };
 
   const deleteClassroom = async (id: string) => {
-    if (!user) throw new Error("Not authenticated");
+    if (!user) throw new Error("لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً.");
     return dbService.classrooms.delete(user.uid, id);
   };
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Plus, Users, ChevronLeft, Calendar, Settings, Wallet, AlertCircle, BookOpen, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Users, ChevronLeft, Calendar, Settings, Wallet, AlertCircle, BookOpen, MapPin, TrendingUp } from 'lucide-react';
 import { useGroups } from '../hooks/useGroups';
 import { useAllStudents } from '../hooks/useAllStudents';
 import { useClassrooms } from '../hooks/useClassrooms';
@@ -19,10 +19,44 @@ export default function Dashboard() {
   const [activeChip, setActiveChip] = useState('كل الأيام');
   const [limitError, setLimitError] = useState('');
   const navigate = useNavigate();
-  const { isPro } = useAuth();
+  const { isPro, user } = useAuth();
   const { canAddGroup, MAX_FREE_GROUPS } = useProGuard();
 
   const loading = groupsLoading || studentsLoading || classroomsLoading;
+
+  // إحصائيات سريعة من قاعدة البيانات (المصدر الوحيد للحقيقة هو Supabase)
+  const [stats, setStats] = useState({ unpaidStudents: 0, sessionsThisWeek: 0 });
+  useEffect(() => {
+    let cancelled = false;
+    const loadStats = async () => {
+      const { supabase } = await import('../lib/supabase');
+      try {
+        const now = new Date();
+        const weekStart = new Date(now);
+        weekStart.setHours(0, 0, 0, 0);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const [debtRows, sessionRows] = await Promise.all([
+          supabase
+            .from('student_debt_summary')
+            .select('student_id')
+            .gt('session_balance', 0),
+          supabase
+            .from('sessions')
+            .select('id')
+            .gte('date', weekStart.toISOString()),
+        ]);
+        if (cancelled) return;
+        setStats({
+          unpaidStudents: Math.min((debtRows.data || []).length, 10000),
+          sessionsThisWeek: (sessionRows.data || []).length,
+        });
+      } catch (err) {
+        console.error('Error loading dashboard stats:', err);
+      }
+    };
+    if (user) loadStats();
+    return () => { cancelled = true; };
+  }, [user, studentsLoading]);
 
   const handleAddGroupClick = () => {
     if (canAddGroup(groups.length, isPro)) {
@@ -106,6 +140,31 @@ export default function Dashboard() {
         {loading && (
           <div className="flex justify-center items-center py-12">
             <div className="w-8 h-8 border-2 border-[#C5A059]/30 border-t-[#C5A059] rounded-full animate-spin" />
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="p-4 bg-[#FAF9F6] border-b border-gray-200/60">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="w-4 h-4 text-[#C5A059]" />
+              <h2 className="text-sm font-bold text-[#0B2545]">نظرة سريعة</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate('/finance')}
+                className="bg-white border border-gray-100 rounded-2xl p-4 text-right shadow-sm hover:border-[#C5A059]/30 transition-colors"
+              >
+                <p className="text-xs text-gray-500 font-medium mb-1">تلاميذ عليهم مستحقات</p>
+                <p className="text-2xl font-bold text-red-600" dir="ltr">{stats.unpaidStudents}</p>
+              </button>
+              <button
+                onClick={() => navigate('/finance')}
+                className="bg-white border border-gray-100 rounded-2xl p-4 text-right shadow-sm hover:border-[#C5A059]/30 transition-colors"
+              >
+                <p className="text-xs text-gray-500 font-medium mb-1">حصص هذا الأسبوع</p>
+                <p className="text-2xl font-bold text-[#0B2545]" dir="ltr">{stats.sessionsThisWeek}</p>
+              </button>
+            </div>
           </div>
         )}
 

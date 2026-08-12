@@ -78,17 +78,16 @@ export const dbService = {
   },
   auth: {
     syncUser: async (currentUser: any) => {
-      // The trigger public.handle_new_user() automatically handles syncing on auth.users insert.
-      // But we can check if it exists just in case.
+      // The trigger public.handle_new_user() automatically handles syncing on auth.users insert,
+      // using the REAL phone number registered during signup. The teacher row is therefore
+      // guaranteed to exist by the time this runs.
+      // SECURITY: we no longer insert a placeholder teacher with a fake TEMP-* phone number.
+      // A fabricated phone number would let an anonymous actor fabricate identities (one account
+      // per phone) and pollute activation-key/audit data. If the row is missing here, something
+      // broke at the database level and the caller should surface the error instead of masking it.
       const { data, error } = await supabase.from('teachers').select('id').eq('id', currentUser.id).single();
       if (error && error.code === 'PGRST116') {
-         await supabase.from('teachers').insert({
-            id: currentUser.id,
-            full_name: currentUser.user_metadata?.full_name || currentUser.email || 'Teacher',
-            sex: 'male',
-            subject: 'General',
-            phone_number: currentUser.user_metadata?.phone_number || currentUser.phone || `TEMP-${Date.now()}`
-         });
+        throw new Error('خطأ في مزامنة الحساب: سجل الأستاذ غير موجود في قاعدة البيانات. تواصل مع الدعم.');
       }
     },
     subscribeToUserProfile: (uid: string, onData: (isPro: boolean) => void, onError: (err: Error) => void) => {
