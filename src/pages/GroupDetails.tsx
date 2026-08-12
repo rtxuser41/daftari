@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { SwipeableStudentItem } from "../components/SwipeableStudentItem";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DebtService } from "../domain/services/DebtService";
 import { AddStudentModal } from "../components/AddStudentModal";
 import { EditStudentModal } from "../components/EditStudentModal";
@@ -49,6 +50,12 @@ export default function GroupDetails() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmSuccess, setConfirmSuccess] = useState("");
   const [fastAttendanceMode, setFastAttendanceMode] = useState(false);
+
+  // Confirmation dialogs (بديل آمن ومريح عن window.confirm على الهاتف)
+  const [pendingStudentDeleteId, setPendingStudentDeleteId] = useState<string | null>(null);
+  const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null);
+  const [pendingSessionCancel, setPendingSessionCancel] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Expenses Form
   const [expDescription, setExpDescription] = useState("");
@@ -217,17 +224,23 @@ export default function GroupDetails() {
   };
 
   const handleCancelSession = async () => {
-    if (window.confirm("هل أنت متأكد من إلغاء الحصة؟")) {
-      try {
-        await cancelSession();
-        setDraftAttendance({});
-        setDraftPayment({});
-        setConfirmSuccess("تم إلغاء الحصة بنجاح.");
-        setTimeout(() => setConfirmSuccess(""), 3000);
-      } catch (err) {
-        setLimitError("حدث خطأ أثناء إلغاء الحصة.");
-        setTimeout(() => setLimitError(""), 3000);
-      }
+    setPendingSessionCancel(true);
+  };
+
+  const handleCancelSessionConfirmed = async () => {
+    setPendingSessionCancel(false);
+    setIsDeleting(true);
+    try {
+      await cancelSession();
+      setDraftAttendance({});
+      setDraftPayment({});
+      setConfirmSuccess("تم إلغاء الحصة بنجاح.");
+      setTimeout(() => setConfirmSuccess(""), 3000);
+    } catch (err) {
+      setLimitError("حدث خطأ أثناء إلغاء الحصة.");
+      setTimeout(() => setLimitError(""), 3000);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -382,7 +395,7 @@ export default function GroupDetails() {
                     fastAttendanceMode={fastAttendanceMode}
                     onToggleAttendance={handleToggleAttendance}
                     onTogglePayment={handleTogglePayment}
-                    onDelete={softDeleteStudent}
+                    onDelete={(studentId: string) => setPendingStudentDeleteId(studentId)}
                     onEdit={setEditingStudent}
                   />
                 );
@@ -442,7 +455,8 @@ export default function GroupDetails() {
                         document.body.removeChild(link);
                       } catch (err) {
                         console.error('Failed to generate report', err);
-                        alert('حدث خطأ أثناء استخراج التقرير');
+                        setLimitError('حدث خطأ أثناء استخراج التقرير.');
+                        setTimeout(() => setLimitError(''), 4000);
                       }
                     }}
                     className="px-6 py-2 bg-white border border-green-200 text-green-700 font-bold rounded-lg hover:bg-green-100 transition-colors shadow-sm"
@@ -677,15 +691,7 @@ export default function GroupDetails() {
                         </span>
                         {true && (
                           <button
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  "هل أنت متأكد من حذف هذا المصروف؟",
-                                )
-                              ) {
-                                deleteExpense(expense.id!);
-                              }
-                            }}
+                            onClick={() => setPendingExpenseId(expense.id!)}
                             className="text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors"
                           >
                             <Trash2 size={20} />
@@ -853,13 +859,64 @@ export default function GroupDetails() {
         group={group}
       />
 
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `,
+      <ConfirmDialog
+        isOpen={!!pendingStudentDeleteId}
+        title="حذف الطالب؟"
+        message="سيتم حذف هذا الطالب وأرشفته في قائمة المحذوفين. يمكنك استرجاعه لاحقاً من تبويب «المحذوفون»."
+        confirmLabel="نعم، احذفه"
+        isConfirming={isDeleting}
+        onConfirm={async () => {
+          const id = pendingStudentDeleteId;
+          setPendingStudentDeleteId(null);
+          if (!id) return;
+          setIsDeleting(true);
+          try {
+            await softDeleteStudent(id);
+            setConfirmSuccess("تم حذف الطالب وأرشفته.");
+            setTimeout(() => setConfirmSuccess(""), 3000);
+          } catch (err) {
+            setLimitError("حدث خطأ أثناء حذف الطالب.");
+            setTimeout(() => setLimitError(""), 3000);
+          } finally {
+            setIsDeleting(false);
+          }
         }}
+        onCancel={() => setPendingStudentDeleteId(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!pendingExpenseId}
+        title="حذف المصروف؟"
+        message="سيتم حذف هذا المصروف نهائياً وتحديث التقرير المالي تلقائياً."
+        confirmLabel="نعم، احذفه"
+        isConfirming={isDeleting}
+        onConfirm={async () => {
+          const id = pendingExpenseId;
+          setPendingExpenseId(null);
+          if (!id) return;
+          setIsDeleting(true);
+          try {
+            await deleteExpense(id);
+            setConfirmSuccess("تم حذف المصروف.");
+            setTimeout(() => setConfirmSuccess(""), 3000);
+          } catch (err) {
+            setLimitError("حدث خطأ أثناء حذف المصروف.");
+            setTimeout(() => setLimitError(""), 3000);
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+        onCancel={() => setPendingExpenseId(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingSessionCancel}
+        title="إلغاء حصة اليوم؟"
+        message="سيتم إلغاء حصة اليوم وكل ما تم إدخاله فيها من حضور ودفوعات مؤقتة. هذا الإجراء لا يمكن التراجع عنه."
+        confirmLabel="نعم، ألغِ الحصة"
+        isConfirming={isDeleting}
+        onConfirm={handleCancelSessionConfirmed}
+        onCancel={() => setPendingSessionCancel(false)}
       />
     </div>
   );

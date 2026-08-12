@@ -5,10 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Daftari',
   webDir: 'dist',
   server: {
+    // Only load the web assets over HTTPS inside the native WebView.
     androidScheme: 'https',
-  },
-  android: {
-    allowMixedContent: true,
   },
 };
 

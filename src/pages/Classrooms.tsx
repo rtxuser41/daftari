@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Plus, MapPin, Users, Edit2, Trash2, AlertCircle, Wallet } from 'lucide-react';
 import { useClassrooms } from '../hooks/useClassrooms';
 import { Classroom } from '../domain/models';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export default function Classrooms() {
   const navigate = useNavigate();
@@ -21,6 +22,8 @@ export default function Classrooms() {
   });
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isReadOnly = false;
 
@@ -113,12 +116,20 @@ export default function Classrooms() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('هل أنت متأكد من حذف هذه القاعة؟')) {
-      try {
-        await deleteClassroom(id);
-      } catch (err: any) {
-        alert(err.message || 'حدث خطأ أثناء الحذف');
-      }
+    setPendingDeleteId(id);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    const id = pendingDeleteId;
+    setPendingDeleteId(null);
+    if (!id) return;
+    setIsDeleting(true);
+    try {
+      await deleteClassroom(id);
+    } catch (err: any) {
+      setFormError(err.message || 'حدث خطأ أثناء الحذف');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -367,6 +378,16 @@ export default function Classrooms() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!pendingDeleteId}
+        title="حذف القاعة؟"
+        message="سيتم حذف هذه القاعة نهائياً من جميع المجموعات المرتبطة بها. هذا الإجراء لا يمكن التراجع عنه."
+        confirmLabel="نعم، احذف القاعة"
+        isConfirming={isDeleting}
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

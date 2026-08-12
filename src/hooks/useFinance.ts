@@ -38,7 +38,7 @@ export const useFinance = (groupId: string) => {
   }, [groupId, user]);
 
   const addExpense = async (expenseData: { description: string, amount: number, date: Date }) => {
-    if (!user) throw new Error("Not authenticated");
+    if (!user) throw new Error("لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً.");
     try {
       await dbService.finance.addExpense({
         ...expenseData,
@@ -52,7 +52,7 @@ export const useFinance = (groupId: string) => {
   };
 
   const deleteExpense = async (expenseId: string) => {
-    if (!user) throw new Error("Not authenticated");
+    if (!user) throw new Error("لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً.");
     try {
       await dbService.finance.deleteExpense(user.uid, expenseId);
     } catch (error) {

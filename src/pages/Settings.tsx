@@ -6,7 +6,7 @@ import { ChevronRight, LogOut, MessageCircle, User as UserIcon, Star, Key, Check
 import { Logo } from '../components/Logo';
 
 export default function Settings() {
-  const { user, isPro, logout } = useAuth();
+  const { user, isPro, logout, refreshProStatus } = useAuth();
   const navigate = useNavigate();
   const [activationCode, setActivationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +26,8 @@ export default function Settings() {
     setMessage({ text: result.message, type: result.success ? 'success' : 'error' });
     if (result.success) {
       setActivationCode('');
+      // تحديث حالة Pro من قاعدة البيانات فوراً حتى تظهر مزايا النسخة الاحترافية دون إعادة تسجيل الدخول
+      await refreshProStatus();
     }
     setIsLoading(false);
   };
@@ -79,7 +81,7 @@ export default function Settings() {
                 <h3 className="text-lg font-bold text-white">النسخة المجانية محدودة</h3>
               </div>
               <p className="text-[#FAF9F6]/80 text-sm leading-relaxed mb-4">
-                أنت حالياً تستخدم النسخة المجانية والتي تتيح لك إدارة فريقي عمل (2) و 10 طلاب لكل فريق بحد أقصى.
+                أنت حالياً تستخدم النسخة المجانية والتي تتيح لك إدارة مجموعة واحدة (1) بحد أقصى، مع عدد غير محدود من الطلاب داخل المجموعة.
               </p>
               
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 space-y-4 border border-white/5">

@@ -47,7 +47,7 @@ export const useStudents = (groupId: string) => {
       | "notes"
     >,
   ) => {
-    if (!user) throw new Error("User not authenticated");
+    if (!user) throw new Error("لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً.");
 
     const validation = StudentValidator.validate({ fullName: studentData.fullName, phoneNumber: studentData.phoneNumber });
     if (!validation.valid) {
@@ -131,7 +131,7 @@ export const useStudents = (groupId: string) => {
     draftAttendance: Record<string, 'present' | 'absent' | 'excused'>,
     draftPayment: Record<string, boolean>,
   ) => {
-    if (!user) throw new Error("User not authenticated");
+    if (!user) throw new Error("لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً.");
 
     await dbService.students.confirmSession(
       user.uid,
