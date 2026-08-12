@@ -1,0 +1,6 @@
+{
+  "name": "Daftari",
+  "description": "A Progressive Web App for tutors to manage students and groups.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
