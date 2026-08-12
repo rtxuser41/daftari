@@ -417,6 +417,7 @@ RETURNS void AS $$
 DECLARE
   v_teacher_id UUID;
   v_locked boolean;
+  v_key_id UUID;
 BEGIN
   v_teacher_id := auth.uid();
   IF v_teacher_id IS NULL THEN
@@ -429,25 +430,38 @@ BEGIN
     RAISE EXCEPTION 'يرجى إعادة المحاولة بعد لحظات';
   END IF;
 
-  -- Atomically lock and consume exactly one unused key
+  -- Atomically lock and consume exactly one unused key.
+  -- NOTE: PL/pgSQL parses the `FOR` of a cursor-style UPDATE ... FOR UPDATE as
+  -- invalid syntax in some Postgres versions, so we lock with SELECT FOR UPDATE
+  -- on the single candidate row instead (same serialization guarantee).
+  SELECT id INTO v_key_id
+  FROM activation_keys
+  WHERE key = trim(lower(key_input)) AND is_used = FALSE
+  FOR UPDATE
+  LIMIT 1;
+
+  IF v_key_id IS NULL THEN
+    PERFORM public.insert_audit_log(
+      'key_claim_failed',
+      v_teacher_id,
+      NULL,
+      jsonb_build_object('reason', 'not_found_or_used')
+    );
+    RAISE EXCEPTION 'مفتاح التفعيل غير صالح أو تم استخدامه مسبقاً';
+  END IF;
+
   UPDATE activation_keys
   SET is_used = TRUE,
       used_by = v_teacher_id,
       used_at = NOW()
-  WHERE key = trim(lower(key_input))
-    AND is_used = FALSE
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'مفتاح التفعيل غير صالح أو تم استخدامه مسبقاً';
-  END IF;
+  WHERE id = v_key_id;
 
   UPDATE teachers SET is_pro = TRUE WHERE id = v_teacher_id;
 
   PERFORM public.insert_audit_log(
     'key_claimed',
     v_teacher_id,
-    (SELECT id FROM activation_keys WHERE key = trim(lower(key_input)) AND used_by = v_teacher_id LIMIT 1),
+    v_key_id,
     jsonb_build_object('teacher_id', v_teacher_id)
   );
 END;
