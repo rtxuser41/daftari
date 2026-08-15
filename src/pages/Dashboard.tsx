@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { useAuth } from '../contexts/AuthContext';
 import { useProGuard } from '../hooks/useProGuard';
+import { supabase } from '../lib/supabase';
 
 const daysOfWeek = ['كل الأيام', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -29,7 +30,6 @@ export default function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     const loadStats = async () => {
-      const { supabase } = await import('../lib/supabase');
       try {
         const now = new Date();
         const weekStart = new Date(now);

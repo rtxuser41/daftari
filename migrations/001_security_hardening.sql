@@ -58,6 +58,7 @@ RETURNS void AS $$
 DECLARE
   v_teacher_id UUID;
   v_locked boolean;
+  v_key_id UUID;
 BEGIN
   v_teacher_id := auth.uid();
   IF v_teacher_id IS NULL THEN
@@ -65,30 +66,36 @@ BEGIN
   END IF;
 
   -- Serialize all concurrent claims on this key
-  v_locked := pg_try_advisory_xact_lock(hashtext('claim:' || trim(lower(key_input))));
+  v_locked := pg_try_advisory_xact_lock(hashtext('claim:' || trim(upper(key_input))));
   IF NOT v_locked THEN
     RAISE EXCEPTION 'يرجى إعادة المحاولة بعد لحظات';
   END IF;
 
-  -- Atomically lock and consume exactly one unused key
-  UPDATE activation_keys
-  SET is_used = TRUE,
-      used_by = v_teacher_id,
-      used_at = NOW()
-  WHERE key = trim(lower(key_input))
+  -- Lock the candidate row before consuming it; this is valid PL/pgSQL syntax
+  -- and preserves the race-safe behavior intended by this migration.
+  SELECT id INTO v_key_id
+  FROM public.activation_keys
+  WHERE key = trim(upper(key_input))
     AND is_used = FALSE
-  FOR UPDATE;
+  FOR UPDATE
+  LIMIT 1;
 
-  IF NOT FOUND THEN
+  IF v_key_id IS NULL THEN
     RAISE EXCEPTION 'مفتاح التفعيل غير صالح أو تم استخدامه مسبقاً';
   END IF;
 
-  UPDATE teachers SET is_pro = TRUE WHERE id = v_teacher_id;
+  UPDATE public.activation_keys
+  SET is_used = TRUE,
+      used_by = v_teacher_id,
+      used_at = NOW()
+  WHERE id = v_key_id;
+
+  UPDATE public.teachers SET is_pro = TRUE WHERE id = v_teacher_id;
 
   PERFORM public.insert_audit_log(
     'key_claimed',
     v_teacher_id,
-    (SELECT id FROM activation_keys WHERE key = trim(lower(key_input)) AND used_by = v_teacher_id LIMIT 1),
+    v_key_id,
     jsonb_build_object('teacher_id', v_teacher_id)
   );
 END;

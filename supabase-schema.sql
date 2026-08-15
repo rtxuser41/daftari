@@ -425,7 +425,7 @@ BEGIN
   END IF;
 
   -- Serialize all concurrent claims on this key
-  v_locked := pg_try_advisory_xact_lock(hashtext('claim:' || trim(lower(key_input))));
+  v_locked := pg_try_advisory_xact_lock(hashtext('claim:' || trim(upper(key_input))));
   IF NOT v_locked THEN
     RAISE EXCEPTION 'يرجى إعادة المحاولة بعد لحظات';
   END IF;
@@ -436,7 +436,7 @@ BEGIN
   -- on the single candidate row instead (same serialization guarantee).
   SELECT id INTO v_key_id
   FROM activation_keys
-  WHERE key = trim(lower(key_input)) AND is_used = FALSE
+  WHERE key = trim(upper(key_input)) AND is_used = FALSE
   FOR UPDATE
   LIMIT 1;
 

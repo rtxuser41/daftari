@@ -69,7 +69,7 @@ export const dbService = {
   },
   activation: {
     activateProCode: async (userId: string, code: string) => {
-      const { error } = await supabase.rpc('claim_activation_key', { key_input: code });
+      const { error } = await supabase.rpc('claim_activation_key', { key_input: code.trim().toUpperCase() });
       if (error) {
         return { success: false, message: 'كود التفعيل غير صالح أو تم استخدامه مسبقاً' };
       }

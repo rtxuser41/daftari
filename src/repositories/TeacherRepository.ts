@@ -43,7 +43,7 @@ export class TeacherRepository implements ITeacherRepository {
    */
   async activateProKey(activationKey: string): Promise<{ success: boolean; message: string }> {
     const { error } = await supabase.rpc('claim_activation_key', {
-      key_input: activationKey.trim(),
+      key_input: activationKey.trim().toUpperCase(),
     });
 
     if (error) {
