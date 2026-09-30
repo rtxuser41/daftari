@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "EXPO_NO_METRO_WORKSPACE_ROOT=1 expo start --web --port ${EXPO_PORT:-8081}",
     "start": "EXPO_NO_METRO_WORKSPACE_ROOT=1 expo start",
-    "build": "EXPO_NO_METRO_WORKSPACE_ROOT=1 expo export --platform web && node scripts/harden-web-export.mjs",
+    "build": "node scripts/build-web.mjs",
     "check": "tsc --noEmit",
     "lint": "expo lint",
     "format": "prettier --write .",
