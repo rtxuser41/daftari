@@ -5,17 +5,36 @@ import { dbService } from '../services/dbService';
 import { ChevronRight, LogOut, MessageCircle, User as UserIcon, Star, Key, CheckCircle, AlertCircle, Moon, Globe, Banknote, CloudUpload, Archive } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
+const readDarkModePreference = () => {
+  try {
+    return window.localStorage.getItem('daftari-theme') === 'dark';
+  } catch {
+    return false;
+  }
+};
+
 export default function Settings() {
   const { user, isPro, logout, refreshProStatus } = useAuth();
   const navigate = useNavigate();
   const [activationCode, setActivationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(readDarkModePreference);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const toggleDarkMode = () => {
+    const nextDarkMode = !darkMode;
+    setDarkMode(nextDarkMode);
+    document.documentElement.dataset.theme = nextDarkMode ? 'dark' : 'light';
+    try {
+      window.localStorage.setItem('daftari-theme', nextDarkMode ? 'dark' : 'light');
+    } catch {
+      // The current page still updates if browser storage is unavailable.
+    }
   };
 
   const handleActivate = async () => {
@@ -58,7 +77,7 @@ export default function Settings() {
             )}
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-[#0B2545]">{user?.displayName || 'المستخدم'}</h2>
+            <h2 className="text-lg font-bold text-[#0B2545]">{user?.fullName || 'المستخدم'}</h2>
             <p className="text-sm text-gray-500">{user?.email || 'حساب الضيف'}</p>
           </div>
           {isPro && (
@@ -147,7 +166,10 @@ export default function Settings() {
                 </div>
               </div>
               <button 
-                onClick={() => setDarkMode(!darkMode)}
+                type="button"
+                aria-label="تبديل الوضع الليلي"
+                aria-pressed={darkMode}
+                onClick={toggleDarkMode}
                 className={`w-12 h-6 rounded-full transition-colors relative flex items-center shrink-0 ${darkMode ? 'bg-[#0B2545]' : 'bg-gray-200'}`}
               >
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-cream transition-transform ${darkMode ? 'right-7' : 'right-1'}`} />
@@ -165,11 +187,7 @@ export default function Settings() {
                   <p className="text-xs text-gray-500">لغة واجهة المستخدم</p>
                 </div>
               </div>
-              <select className="bg-cream border border-gray-100 text-sm font-medium rounded-xl focus:ring-2 focus:ring-[#0B2545] focus:border-[#0B2545] py-2 px-3 pr-8 text-[#0B2545] outline-none appearance-none cursor-pointer">
-                <option value="ar">العربية</option>
-                <option value="fr">Français</option>
-                <option value="en">English</option>
-              </select>
+              <span className="text-sm font-medium text-[#0B2545]" aria-label="اللغة الحالية: العربية">العربية فقط</span>
             </div>
 
             {/* Currency */}
@@ -183,13 +201,7 @@ export default function Settings() {
                   <p className="text-xs text-gray-500">العملة الافتراضية للمعاملات</p>
                 </div>
               </div>
-              <div className="relative">
-                <select className="bg-cream border border-gray-100 text-sm font-medium rounded-xl focus:ring-2 focus:ring-[#0B2545] focus:border-[#0B2545] py-2 px-3 pr-8 text-[#0B2545] outline-none appearance-none cursor-pointer text-left" dir="ltr">
-                  <option value="dzd">دج</option>
-                  <option value="eur">€</option>
-                  <option value="usd">$</option>
-                </select>
-              </div>
+              <span className="text-sm font-medium text-[#0B2545]" aria-label="العملة الحالية: الدينار الجزائري">دج</span>
             </div>
           </div>
         </div>
@@ -200,13 +212,13 @@ export default function Settings() {
           <h3 className="text-xs font-bold text-gray-400 px-2 uppercase tracking-wider">إدارة البيانات</h3>
           <div className="bg-cream rounded-2xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden divide-y divide-gray-50">
             {/* Manual Cloud Sync */}
-            <button className="w-full flex items-center gap-4 p-4 hover:bg-cream transition-colors active:bg-gray-100">
+            <button type="button" disabled aria-disabled="true" title="المزامنة السحابية غير متاحة حالياً" className="w-full flex items-center gap-4 p-4 opacity-60 cursor-not-allowed">
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
                 <CloudUpload className="w-5 h-5" />
               </div>
               <div className="flex-1 text-right">
-                <h4 className="text-sm font-bold text-[#0B2545]">مزامنة سحابية يدوية</h4>
-                <p className="text-xs text-gray-500">مزامنة البيانات المحلية مع الخادم</p>
+                <h4 className="text-sm font-bold text-[#0B2545]">المزامنة السحابية غير متاحة حالياً</h4>
+                <p className="text-xs text-gray-500">لا توجد مزامنة يدوية منفّذة في التطبيق حالياً.</p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-300" />
             </button>

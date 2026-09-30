@@ -16,8 +16,66 @@
   }
 }
 
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-cream: #111827;
+  --color-navy: #f3f4f6;
+  --color-gold: #d7b36a;
+}
 
-/* إخفاء شريط التمرير مع الإبقاء على إمكانية التمرير (بديل آمن عن <style dangerouslySetInnerHTML>) */
+html[data-theme="dark"] body {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Existing screens use a mixture of theme tokens and explicit Tailwind colors. */
+html[data-theme="dark"] [class*="bg-[#FAFAF8]"],
+html[data-theme="dark"] [class*="bg-[#FAF9F6]"],
+html[data-theme="dark"] [class~="bg-cream"] {
+  background-color: #111827 !important;
+}
+
+html[data-theme="dark"] [class*="bg-white"] {
+  background-color: #1f2937 !important;
+}
+
+html[data-theme="dark"] [class*="bg-gray-50"] {
+  background-color: #1f2937 !important;
+}
+
+html[data-theme="dark"] [class*="bg-gray-100"] {
+  background-color: #374151 !important;
+}
+
+html[data-theme="dark"] [class*="bg-gray-200"] {
+  background-color: #4b5563 !important;
+}
+
+html[data-theme="dark"] [class*="text-[#0B2545]"],
+html[data-theme="dark"] [class~="text-navy"] {
+  color: #f3f4f6 !important;
+}
+
+html[data-theme="dark"] [class*="text-gray-800"],
+html[data-theme="dark"] [class*="text-gray-700"],
+html[data-theme="dark"] [class*="text-gray-600"],
+html[data-theme="dark"] [class*="text-gray-500"] {
+  color: #d1d5db !important;
+}
+
+html[data-theme="dark"] [class*="border-gray-50"],
+html[data-theme="dark"] [class*="border-gray-100"],
+html[data-theme="dark"] [class*="border-gray-200"] {
+  border-color: #374151 !important;
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  color-scheme: dark;
+}
+
+/* إخفاء شريط التمرير مع الإبقاء على إمكانية التمرير. */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
